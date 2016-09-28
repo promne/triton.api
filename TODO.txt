@@ -1,0 +1,14 @@
+Notes and random things we want/have to do.
+Please put your name to it if you are working on it.
+----------------------------------------------------------
+
+
+* starmap/universe data structure, which will act as a AI’s statefull source of info, add method which will merge and update the starfield from actual state
+* GameClient implementation which takes care of all the universe/player updated (e.g. if you buy a fleer, increase number of fleets, credit the money, etc. )
+* Improve logging and make replay mechanism with dummy GameClient, so we can debug.
+* Shortest(quickest) path matrix - http://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm (shortest or quickest? Difference: takes in account gateways)
+* to supply first line(s) effectively we can consider something like this http://en.wikipedia.org/wiki/Spanning_tree
+* usage of influence maps ? http://gameschoolgems.blogspot.co.nz/2009/12/influence-maps-i.html
+
+
+
