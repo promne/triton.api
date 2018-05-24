@@ -26,7 +26,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
@@ -78,6 +78,7 @@ public class GameClientImpl implements GameClient {
 		super();
 		this.gameId = gameId;
 		this.preferBatchOrders = preferBatchOrders;
+		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
 
 		// now, init http client
 		String proxyHost = System.getProperty("http.proxyHost");
@@ -85,29 +86,34 @@ public class GameClientImpl implements GameClient {
 		if (System.getProperty("http.proxyPort")!=null) {
 			proxyPort = Integer.valueOf(System.getProperty("http.proxyPort"));			
 		}
+		
+		HttpHost proxy = null;
+		if (proxyHost != null && proxyPort != null ) {
+			proxy = new HttpHost(proxyHost, proxyPort);
+		}
+		RequestConfig globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.BEST_MATCH).setProxy(proxy).build();
+		httpClientBuilder.setDefaultRequestConfig(globalConfig);
+		
 		String proxyUser = System.getProperty("http.proxyUser");
 		String proxyPassword = System.getProperty("http.proxyPassword");
-
-		CredentialsProvider credsProvider = new BasicCredentialsProvider();
-		HttpHost proxy = null;
-
-		if (proxyHost != null && proxyPort != null && proxyUser != null && proxyPassword != null) {
+		if (proxyUser != null && proxyPassword != null) {
+			CredentialsProvider credsProvider = new BasicCredentialsProvider();
 			credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
-			proxy = new HttpHost(proxyHost, proxyPort);
+			httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
 		}
 
 		CookieStore cookieStore = new BasicCookieStore();
 		httpContext = HttpClientContext.create();
 		httpContext.setCookieStore(cookieStore);
 
-		RequestConfig globalConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.BEST_MATCH).setProxy(proxy).build();
 
 		BasicClientCookie cookie = new BasicClientCookie("auth", authKey);
-		cookie.setDomain("triton.ironhelmet.com");
+		cookie.setDomain("np.ironhelmet.com");
 		cookieStore.addCookie(cookie);
+		httpClientBuilder.setDefaultCookieStore(cookieStore);
 
 		
-		httpClient = HttpClients.custom().setDefaultRequestConfig(globalConfig).setDefaultCredentialsProvider(credsProvider).setDefaultCookieStore(cookieStore).build();
+		httpClient = httpClientBuilder.build();
 	}
 
 	/**
@@ -130,7 +136,7 @@ public class GameClientImpl implements GameClient {
 	 */
 	private List<NameValuePair> getCommonRequestData() {
 		List<NameValuePair> nvps = new ArrayList<NameValuePair>();
-		nvps.add(new BasicNameValuePair("version", "7"));
+		nvps.add(new BasicNameValuePair("version", ""));
 		nvps.add(new BasicNameValuePair("game_number", gameId));
 		return nvps;
 	}
@@ -148,7 +154,7 @@ public class GameClientImpl implements GameClient {
 		nvps.add(new BasicNameValuePair("type", "order"));
 
 		LOG.debug("Sending order > " + order);
-		String result = sendPostRequest(nvps, "http://triton.ironhelmet.com/grequest/order");
+		String result = sendPostRequest(nvps, "https://np.ironhelmet.com/trequest/order");
 		LOG.debug("Received response > " + result);
 		return result;
 	}
@@ -180,7 +186,7 @@ public class GameClientImpl implements GameClient {
 		nvps.add(new BasicNameValuePair("type", "batched_orders"));
 
 		LOG.debug("Sending batch order > " + batchOrder);
-		String result = sendPostRequest(nvps, "http://triton.ironhelmet.com/grequest/batched_orders");
+		String result = sendPostRequest(nvps, "https://np.ironhelmet.com/trequest/batched_orders");
 		LOG.debug("Received batch response > " + result);
 	}
 
@@ -222,7 +228,7 @@ public class GameClientImpl implements GameClient {
 		nvps.add(new BasicNameValuePair("type", "intel_data"));
 
 		LOG.debug("Sending intel request > " + nvps);
-		String result = sendPostRequest(nvps, "http://triton.ironhelmet.com/grequest/intel_data");
+		String result = sendPostRequest(nvps, "https://np.ironhelmet.com/trequest/intel_data");
 		LOG.debug("Received intel response > " + result);
 	}
 
@@ -429,7 +435,7 @@ public class GameClientImpl implements GameClient {
 	@Override
 	public GameConfig getGameConfig() throws ClientOrderException {
 		if (gameConfig==null) {
-			HttpGet httpGet = new HttpGet("http://triton.ironhelmet.com/game/" + gameId);
+			HttpGet httpGet = new HttpGet("https://np.ironhelmet.com/game/" + gameId);
 			String result = getHttpResponse(httpGet);
 			
 			String startingText = "NeptunesPride.gameConfig ="; 
